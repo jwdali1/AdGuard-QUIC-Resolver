@@ -35,7 +35,7 @@ Build for Windows (AMD64):
 ```powershell
 set GOOS=windows
 set GOARCH=amd64
-go build -ldflags "-H=windowsgui -s -w -X main.version=v1" -o AdGuardQUICCResolver_amd64.exe
+go build -ldflags "-H=windowsgui -s -w -X main.version=v1" -o AdGuardQUICResolver_amd64.exe
 ```
 
 Build for Windows (ARM64):
@@ -43,7 +43,7 @@ Build for Windows (ARM64):
 ```powershell
 set GOOS=windows
 set GOARCH=arm64
-go build -ldflags "-H=windowsgui -s -w -X main.version=v1" -o AdGuardQUICCResolver_arm64.exe
+go build -ldflags "-H=windowsgui -s -w -X main.version=v1" -o AdGuardQUICResolver_arm64.exe
 ```
 
 > The `-H=windowsgui` flag hides the console window.  
