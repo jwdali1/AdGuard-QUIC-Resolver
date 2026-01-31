@@ -1,0 +1,9 @@
+# Go binaries
+*.exe
+
+# Logs and temp files
+*.log
+*.tmp
+
+# VS Code settings
+.vscode/
