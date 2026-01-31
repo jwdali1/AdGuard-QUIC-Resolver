@@ -1,0 +1,247 @@
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>AdGuard QUICC Resolver</title>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<style>
+:root {
+  --accent-color: #4caf50;
+  --accent-hover: #45a049;
+  --light-bg: #f5f5f5;
+  --light-text: #111;
+  --dark-bg: #000000; /* OLED dark */
+  --dark-text: #ffffff;
+  --card-bg-light: #ffffff;
+  --card-bg-dark: #111111;
+  --input-bg-light: #fff;
+  --input-bg-dark: #222;
+}
+
+body {
+  font-family: 'Segoe UI', Arial, sans-serif;
+  margin: 0;
+  padding: 20px;
+  background-color: var(--light-bg);
+  color: var(--light-text);
+  transition: all 0.3s;
+}
+
+body.dark-mode {
+  background-color: var(--dark-bg);
+  color: var(--dark-text);
+}
+
+h2 {
+  margin-bottom: 20px;
+}
+
+.card {
+  background-color: var(--card-bg-light);
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+  margin-bottom: 20px;
+  transition: all 0.3s;
+}
+
+body.dark-mode .card {
+  background-color: var(--card-bg-dark);
+  box-shadow: 0 4px 15px rgba(255,255,255,0.05);
+}
+
+label {
+  display: block;
+  margin-top: 12px;
+  font-weight: 500;
+}
+
+/* Input styling */
+input[type="text"] {
+  width: 100%;
+  max-width: 480px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  background-color: var(--input-bg-light);
+  color: inherit;
+  transition: all 0.3s;
+}
+
+body.dark-mode input[type="text"] {
+  background-color: var(--input-bg-dark);
+  border: 1px solid #555;
+}
+
+/* Toggle switches */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 52px;
+  height: 28px;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  transition: 0.4s;
+  border-radius: 34px;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 22px;
+  width: 22px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: 0.4s;
+  border-radius: 50%;
+}
+
+input:checked + .slider {
+  background-color: var(--accent-color);
+}
+
+input:checked + .slider:before {
+  transform: translateX(24px);
+}
+
+/* Buttons */
+button {
+  padding: 10px 16px;
+  margin-top: 12px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  background-color: var(--accent-color);
+  color: #fff;
+  font-weight: bold;
+  transition: background-color 0.2s;
+}
+
+button:hover {
+  background-color: var(--accent-hover);
+}
+
+/* Logs card */
+#logs {
+  width: 100%;
+  height: 200px;
+  padding: 12px;
+  border-radius: 12px;
+  border: none;
+  background-color: var(--card-bg-light);
+  color: inherit;
+  resize: vertical;
+  font-family: monospace;
+  box-shadow: inset 0 0 10px rgba(0,0,0,0.05);
+  transition: all 0.3s;
+}
+
+body.dark-mode #logs {
+  background-color: var(--card-bg-dark);
+  box-shadow: inset 0 0 10px rgba(255,255,255,0.05);
+}
+
+/* Container flex for checkboxes */
+.checkbox-container {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+
+</style>
+</head>
+<body>
+
+<h2>Go DNS Forwarder</h2>
+
+<div class="card">
+  <label>DoH URL<input type="text" id="doh" placeholder="https://dns.adguard-dns.com/dns-query"/></label>
+  <label>DoQ host<input type="text" id="doq" placeholder="quic://dns.adguard-dns.com"/></label>
+
+  <div class="checkbox-container">
+    <label class="switch">
+      <input type="checkbox" id="preferDoQ"/>
+      <span class="slider"></span>
+    </label>
+    <span>Prefer DoQ</span>
+
+    <label class="switch">
+      <input type="checkbox" id="startup"/>
+      <span class="slider"></span>
+    </label>
+    <span>Run at Windows startup</span>
+
+    <button id="themeToggle">Toggle Dark/Light</button>
+  </div>
+
+  <button onclick="save()">Save</button>
+  <button onclick="refresh()">Refresh</button>
+</div>
+
+<div class="card">
+  <h3>Logs (newest first)</h3>
+  <textarea id="logs" readonly></textarea>
+</div>
+
+<script>
+function setTheme(dark) {
+  if(dark) document.body.classList.add('dark-mode');
+  else document.body.classList.remove('dark-mode');
+}
+
+// default system theme
+setTheme(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+
+document.getElementById('themeToggle').addEventListener('click', () => {
+  document.body.classList.toggle('dark-mode');
+});
+
+async function refresh() {
+  let r = await fetch('/config'); 
+  let j = await r.json();
+  document.getElementById('doh').value = j.doh_url || '';
+  document.getElementById('doq').value = j.doq || '';
+  document.getElementById('preferDoQ').checked = j.prefer_doq || false;
+  document.getElementById('startup').checked = j.run_at_startup || false;
+
+  let l = await fetch('/logs'); 
+  let text = await l.text();
+  document.getElementById('logs').value = text;
+}
+
+async function save() {
+  let body = { 
+    doh_url: document.getElementById('doh').value, 
+    doq: document.getElementById('doq').value,
+    prefer_doq: document.getElementById('preferDoQ').checked,
+    run_at_startup: document.getElementById('startup').checked
+  };
+  await fetch('/config', { 
+    method:'POST', 
+    headers:{'content-type':'application/json'}, 
+    body:JSON.stringify(body) 
+  });
+  alert('Saved'); 
+  refresh();
+}
+
+refresh();
+</script>
+</body>
+</html>
